@@ -20,7 +20,12 @@ app.use(bodyParser.json());
 app.use(express.static("public")); // Serve HTML from public folder
 
 // Use your installed Chrome
-process.env.TAIKO_BROWSER_PATH = "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"; // Update if different
+process.env.TAIKO_BROWSER_PATH = "/usr/bin/chromium-browser";
+
+await openBrowser({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"]
+});
 
 async function fetchAttendanceFromPortal(username, password) {
     let browserOpen = false; // Track browser state locally
