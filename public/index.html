@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<!-- Ensure optimal viewing on all devices -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+<title>MITS IMS Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ----------------------------------
+ * 1. BASE & CONTAINER STYLES
+ * ---------------------------------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    font-family: 'Roboto', sans-serif; 
+    /* Gradient Background */
+    background: linear-gradient(to right, #6a11cb, #2575fc); 
+    min-height: 100vh; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    color: #fff; 
+    padding: 20px;
+}
+.container { 
+    /* Glass Effect */
+    background: rgba(255,255,255,0.1); 
+    backdrop-filter: blur(10px); 
+    padding: 30px; 
+    border-radius: 20px; 
+    width: 100%; 
+    max-width: 480px; /* Max width for desktop/tablet */
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3); 
+    animation: fadeIn 1s ease; 
+    position: relative;
+    overflow: hidden; /* Contains absolute message box */
+}
+
+/* ----------------------------------
+ * 2. FORM & INPUT STYLES
+ * ---------------------------------- */
+h2 { 
+    text-align: center; 
+    margin-bottom: 25px; 
+    font-weight: 700; 
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.3); 
+}
+form { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+    animation: slideIn 1s ease; 
+    padding-top: 50px; /* Space for absolute message box */
+    margin-top: -50px;
+}
+input { 
+    padding: 14px; 
+    border-radius: 10px; 
+    border: 1px solid rgba(255,255,255,0.3); 
+    background: rgba(255,255,255,0.1); 
+    font-size: 16px; 
+    color: #fff;
+    transition: all 0.3s ease; 
+    width: 100%; /* Explicitly set to full width */
+}
+input::placeholder { color: rgba(255,255,255,0.7); }
+input:focus { 
+    outline: none; 
+    box-shadow: 0 0 12px rgba(255,255,255,0.9); 
+    background: rgba(255,255,255,0.3); 
+}
+.input-error-border {
+    border-color: #ff5252 !important; /* Red border for shake error */
+    box-shadow: 0 0 12px rgba(255, 82, 82, 0.9) !important;
+}
+button { 
+    position: relative;
+    padding: 14px; 
+    border-radius: 10px; 
+    border: none; 
+    background: #fff; 
+    color: #2575fc; 
+    font-weight: 700; 
+    cursor: pointer; 
+    transition: all 0.3s ease; 
+    display:flex; 
+    justify-content:center; 
+    align-items:center; 
+    gap:10px;
+    width: 100%; /* Explicitly set to full width */
+}
+button:hover { background:#2575fc; color:#fff; transform:translateY(-2px); box-shadow:0 6px 15px rgba(0,0,0,0.2);}
+button:disabled { background:#ccc; color:#666; cursor:not-allowed; }
+
+/* Loader Styles */
+.loader-spinner { 
+    border:3px solid #f3f3f3; 
+    border-top:3px solid #2575fc; 
+    border-radius:50%; 
+    width:18px; height:18px; 
+    animation: spin 1s linear infinite; 
+    display:none;
+}
+.button-content.hidden { display: none; }
+
+/* ----------------------------------
+ * 3. MESSAGE BOX STYLES (Replaces alert())
+ * ---------------------------------- */
+#message-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    padding: 10px 30px 0 30px; /* Top padding for message visibility */
+}
+.message-box {
+    margin-bottom: 0;
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(-50px);
+    transition: all 0.5s ease-out;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+.message-box.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.error-box { background: #ff5252; } /* Red */
+.success-box { background: #4caf50; } /* Green */
+
+
+/* ----------------------------------
+ * 4. RESULTS & TABLE STYLES
+ * ---------------------------------- */
+#result { margin-top:25px; display:none; animation: fadeIn 0.7s ease; }
+#overall { 
+    font-size:18px; font-weight:500; margin-bottom:15px; text-align:center; 
+    padding:10px; background: rgba(255,255,255,0.15); border-radius:10px; 
+}
+table { 
+    border-collapse: separate; border-spacing:0; width:100%; 
+    background: rgba(255,255,255,0.2); border-radius:12px; overflow:hidden; 
+}
+th, td { border:1px solid rgba(255,255,255,0.3); padding:10px; text-align:center; transition: all 0.3s ease; }
+th { background: rgba(255,255,255,0.3); font-weight:600; }
+tr:nth-child(even) { background: rgba(255,255,255,0.1); }
+.low-attendance { 
+    background: rgba(255,50,50,0.3) !important; 
+    font-weight:700; 
+    color:#fff; 
+    text-shadow:0 0 5px rgba(0,0,0,0.5); 
+}
+tr:hover { transform: scale(1.00); background: rgba(255,255,255,0.15); transition: all 0.2s ease; }
+
+/* ----------------------------------
+ * 5. ANIMATIONS
+ * ---------------------------------- */
+.shake { animation: shake 0.5s; }
+@keyframes shake { 
+    0%, 100% {transform:translateX(0);} 
+    20%, 60% {transform:translateX(-5px);} 
+    40%, 80% {transform:translateX(5px);} 
+}
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+@keyframes slideIn { from{opacity:0; transform:translateY(-20px);} to{opacity:1; transform:translateY(0);} }
+@keyframes spin { 0%{transform:rotate(0deg);} 100%{transform:rotate(360deg);} }
+
+/* ----------------------------------
+ * 6. RESPONSIVE
+ * ---------------------------------- */
+@media(max-width:500px){ 
+    .container{padding:20px; border-radius: 10px;} 
+    input,button{font-size:14px; padding:12px;} 
+    table{font-size:14px;} 
+    #message-container { padding: 10px 20px 0 20px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+<h2>MITS IMS Attendance</h2>
+
+<div id="message-container"></div> <!-- Custom message box -->
+
+<form id="form">
+    <input id="username" placeholder="Roll Number" required autocomplete="off">
+    <input id="password" type="password" placeholder="Password" required>
+    <button type="submit" id="fetchButton">
+        <span class="button-content">Fetch Attendance</span>
+        <div class="loader-spinner"></div>
+    </button>
+</form>
+
+<div id="result">
+    <p id="overall"></p>
+    <table id="subjectsTable"></table>
+</div>
+</div>
+
+<script>
+const form = document.getElementById("form");
+const resultDiv = document.getElementById("result");
+const button = document.getElementById("fetchButton");
+const buttonContent = button.querySelector(".button-content");
+const loader = button.querySelector(".loader-spinner");
+
+function setButtonState(isFetching){
+    button.disabled = isFetching;
+    buttonContent.classList.toggle("hidden", isFetching);
+    loader.style.display = isFetching ? "inline-block" : "none";
+}
+
+// Function to display custom messages (replaces alert())
+function displayMessage(message, isError = false, wrongPassword = false){
+    const messageContainer = document.getElementById("message-container");
+    
+    // Clear existing messages
+    messageContainer.innerHTML = ''; 
+
+    const msgElement = document.createElement('div');
+    msgElement.textContent = isError ? "❌ " + message : "✅ " + message;
+    msgElement.classList.add('message-box');
+    msgElement.classList.add(isError ? 'error-box' : 'success-box');
+    
+    messageContainer.appendChild(msgElement);
+
+    // Make it visible after a short delay for animation
+    setTimeout(() => {
+        msgElement.classList.add('visible');
+    }, 10);
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        msgElement.classList.remove('visible');
+        setTimeout(() => messageContainer.innerHTML = '', 500); // Clear element after transition
+    }, 5000);
+    
+    // Shake effect for wrong password
+    if(isError && wrongPassword){
+        form.classList.add("shake");
+        const pwd = document.getElementById("password");
+        pwd.classList.add("input-error-border"); 
+        
+        setTimeout(()=>{ 
+            pwd.classList.remove("input-error-border"); 
+            form.classList.remove("shake"); 
+        }, 1000);
+    }
+}
+
+
+form.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    resultDiv.style.display="none";
+    setButtonState(true);
+
+    try{
+        const response = await fetch("/fetch-attendance",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({username,password})
+        });
+        const data = await response.json();
+
+        if(data.success){
+            // Display success message (optional, but good feedback)
+            displayMessage("Attendance data fetched successfully!", false);
+            
+            resultDiv.style.display="block";
+            // Update overall display based on actual subject count
+            document.getElementById("overall").textContent = `✅ Overall Attendance (${data.subjects.length} Subjects): ${data.overall}%`;
+            
+            const table = document.getElementById("subjectsTable");
+            table.innerHTML = `<tr><th>Subject</th><th>Attendance (%)</th></tr>
+                ${data.subjects.map(s=>`<tr class="${s.percent<75?'low-attendance':''}"><td>${s.subject}</td><td>${s.percent}</td></tr>`).join('')}
+            `;
+            
+        } else {
+            const wrongPassword = data.error && data.error.toLowerCase().includes("credentials");
+            displayMessage(data.error || "Authentication failed. Check your roll number and password.", true, wrongPassword);
+        }
+    } catch(err){
+        displayMessage("Network Error: Could not connect to the server.", true);
+    } finally{
+        setButtonState(false);
+    }
+});
+</script>
+</body>
+</html>
