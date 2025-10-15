@@ -9,7 +9,7 @@
   "dependencies": {
     "express": "^4.19.2",
     "body-parser": "^1.20.3",
-    "taiko": "^1.4.22"
+    "taiko": "1.4.20"
   },
   "engines": {
     "node": ">=18.0.0"
