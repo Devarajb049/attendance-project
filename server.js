@@ -1,118 +1,81 @@
+// server.js
 const express = require("express");
 const bodyParser = require("body-parser");
-const {
-  openBrowser,
-  goto,
-  click,
-  textBox,
-  write,
-  into,
-  waitFor,
-  $,
-  evaluate,
-  closeBrowser
-} = require("taiko");
+const { chromium } = require("playwright");
 
 const app = express();
 app.use(bodyParser.json());
-app.use(express.static("public")); // Serve frontend from /public
+app.use(express.static("public")); // Serve HTML from /public
 
-// Use Chromium from Render
-process.env.TAIKO_BROWSER_PATH = "/usr/bin/chromium-browser";
-
-// Core function
-async function fetchAttendanceFromPortal(username, password) {
-  let browserOpen = false;
+// Function to scrape attendance
+async function fetchAttendance(username, password) {
+  let browser;
   try {
-    await openBrowser({
-      headless: true, // Headless for Render deployment
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-        "--window-size=1280,800",
-        "--ignore-certificate-errors"
-      ]
-    });
-    browserOpen = true;
+    console.log("🎯 Launching headless browser...");
+    browser = await chromium.launch({ headless: true });
+    const page = await browser.newPage();
 
-    await goto("http://mitsims.in/");
-    await click("Student");
+    console.log("🌐 Navigating to MITS IMS...");
+    await page.goto("https://mitsims.in/", { waitUntil: "domcontentloaded", timeout: 60000 });
 
-    await write(username, into(textBox({ id: "inputStuId" })));
-    await write(password, into(textBox({ id: "inputPassword" })));
-    await click("Login");
+    console.log("🔑 Clicking on Student login...");
+    await page.click("text=Student");
 
-    await waitFor(async () => (await $("#displayfield-1133").exists()), {
-      timeout: 15000
-    });
+    console.log("🧾 Filling credentials...");
+    await page.fill("#inputStuId", username);
+    await page.fill("#inputPassword", password);
+    await page.click("text=Login");
 
-    const data = await evaluate(() => {
-      const numSubjects = 13;
-      const startNameId = 1130;
-      const startPercentId = 1133;
-      const step = 6;
-      let subjects = [];
+    console.log("⏳ Waiting for dashboard to load...");
+    await page.waitForTimeout(5000);
 
-      for (let i = 0; i < numSubjects; i++) {
-        const nameId = `displayfield-${startNameId + i * step}`;
-        const percentId = `displayfield-${startPercentId + i * step}`;
-        const nameEl = document.getElementById(nameId);
-        const percentEl = document.getElementById(percentId);
-        if (percentEl) {
-          const percent = parseFloat(percentEl.innerText.trim()) || 0;
-          let subjectName = "Subject Name Missing";
-          if (nameEl && nameEl.innerText) {
-            subjectName = nameEl.innerText.trim().replace(/:\s*$/, "").trim();
-          }
-          subjects.push({ subject: subjectName, percent });
-        }
-      }
+    // Check for successful login
+    const dashboardVisible = await page.isVisible("text=Attendance");
+    if (!dashboardVisible) {
+      throw new Error("Invalid credentials or portal layout changed");
+    }
 
-      const totalPercent = subjects.reduce((sum, s) => sum + s.percent, 0);
-      const overall =
-        subjects.length > 0
-          ? (totalPercent / subjects.length).toFixed(2)
-          : "0.00";
+    console.log("📋 Navigating to Attendance page...");
+    await page.click("text=Attendance");
+    await page.waitForSelector("table", { timeout: 20000 });
 
-      return { subjects, overall };
+    console.log("✅ Extracting attendance data...");
+    const attendanceData = await page.evaluate(() => {
+      const table = document.querySelector("table");
+      if (!table) return "No attendance data found.";
+      return table.innerText;
     });
 
-    return data;
+    return attendanceData;
   } catch (err) {
-    console.error("Scraping error:", err);
-    throw new Error("Failed to fetch attendance");
+    console.error("❌ Scraping error:", err.message);
+    throw new Error("Failed to fetch attendance: " + err.message);
   } finally {
-    if (browserOpen) {
-      try {
-        await closeBrowser();
-      } catch (closeError) {
-        console.error("Browser close error:", closeError.message);
-      }
+    if (browser) {
+      await browser.close();
+      console.log("🔒 Browser closed");
     }
   }
 }
 
-// API endpoint
+// Route for attendance API
 app.post("/fetch-attendance", async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password)
-    return res.status(400).json({ error: "Username & password required" });
+
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password required" });
+  }
+
+  console.log(`📨 Fetch request for user: ${username}`);
 
   try {
-    const result = await fetchAttendanceFromPortal(username, password);
-    res.json({ success: true, ...result });
-  } catch {
-    res.status(500).json({
-      success: false,
-      error: "Failed to fetch attendance. Check credentials or portal status."
-    });
+    const attendance = await fetchAttendance(username, password);
+    res.json({ success: true, data: attendance });
+  } catch (error) {
+    console.error("⚠️ Error in /fetch-attendance:", error.message);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Server listen (for Render)
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () =>
-  console.log(`✅ Server running on port ${PORT}`)
-);
+app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));

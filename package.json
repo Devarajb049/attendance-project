@@ -1,7 +1,7 @@
 {
   "name": "mits-ims-attendance",
   "version": "1.0.0",
-  "description": "MITS IMS Attendance Scraper using Taiko + Express",
+  "description": "MITS IMS Attendance Scraper using Playwright + Express",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -9,7 +9,7 @@
   "dependencies": {
     "express": "^4.19.2",
     "body-parser": "^1.20.3",
-"taiko": "1.4.4"
+    "playwright": "^1.48.2"
   },
   "engines": {
     "node": ">=18.0.0"
