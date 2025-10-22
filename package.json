@@ -1,18 +1,13 @@
 {
-  "name": "resultautomation",
+  "name": "attendance-bot",
   "version": "1.0.0",
-  "main": "resultAutomation.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "This project is a result automation tool built using **Node.js**, **Inquirer.js**, and **Taiko**. The tool automates the process of fetching results from the APSBTET result page for a batch of students based on their admission year, branch, and semester.",
   "dependencies": {
-    "body-parser": "^1.20.2",
     "express": "^4.18.2",
-    "taiko": "^1.4.5"
-  },
-  "keywords": []
+    "body-parser": "^1.20.2",
+    "taiko": "^1.0.2"
+  }
 }
