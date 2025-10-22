@@ -1,17 +1,18 @@
 {
-  "name": "mits-ims-attendance",
+  "name": "resultautomation",
   "version": "1.0.0",
-  "description": "MITS IMS Attendance Scraper using Playwright + Express",
-  "main": "server.js",
+  "main": "resultAutomation.js",
   "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
+  "author": "",
+  "license": "ISC",
+  "description": "This project is a result automation tool built using **Node.js**, **Inquirer.js**, and **Taiko**. The tool automates the process of fetching results from the APSBTET result page for a batch of students based on their admission year, branch, and semester.",
   "dependencies": {
-    "express": "^4.19.2",
-    "body-parser": "^1.20.3",
-    "playwright": "^1.48.2"
+    "body-parser": "^1.20.2",
+    "express": "^4.18.2",
+    "taiko": "^1.4.5"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  }
+  "keywords": []
 }
